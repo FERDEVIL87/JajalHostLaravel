@@ -16,20 +16,45 @@
         <div class="errors" style="margin-bottom: 20px;"><p>{{ session('error') }}</p></div>
     @endif
 
+    @php
+        $sort = request('sort', 'name');
+        $dir = request('dir', 'asc');
+        function sort_link_paket($label, $col) {
+            $currentSort = request('sort', 'name');
+            $currentDir = request('dir', 'asc');
+            $newDir = ($currentSort === $col && $currentDir === 'asc') ? 'desc' : 'asc';
+            $icon = '';
+            if ($currentSort === $col) {
+                $icon = $currentDir === 'asc' ? '↑' : '↓';
+            }
+            $params = array_merge(request()->except(['sort', 'dir', 'page']), ['sort' => $col, 'dir' => $newDir]);
+            $url = url()->current() . '?' . http_build_query($params);
+            return '<a href="' . $url . '" style="color:#00d9ff;">' . $label . ' ' . $icon . '</a>';
+        }
+    @endphp
+
     <div class="table-responsive">
         <table class="table table-dark table-striped align-middle table-bordered">
             <thead>
                 <tr>
-                    <th>Gambar</th>
-                    <th>Nama Paket</th>
-                    <th>Kategori</th>
-                    <th>Harga</th>
-                    <th>Spesifikasi Utama</th>
+                    <th>{!! sort_link_paket('Gambar', 'image') !!}</th>
+                    <th>{!! sort_link_paket('Nama Paket', 'name') !!}</th>
+                    <th>{!! sort_link_paket('Kategori', 'category') !!}</th>
+                    <th>{!! sort_link_paket('Harga', 'price') !!}</th>
+                    <th>{!! sort_link_paket('Spesifikasi Utama', 'specs') !!}</th>
                     <th style="width: 15%">Aksi</th>
                 </tr>
             </thead>
             <tbody>
-                @forelse ($pakets as $paket)
+                @php
+                    $sorted = $pakets->sortBy(function($paket) use ($sort) {
+                        if ($sort === 'specs') {
+                            return is_array($paket->specs) ? implode(' ', array_keys($paket->specs)) : '';
+                        }
+                        return $paket->{$sort};
+                    }, SORT_REGULAR, $dir === 'desc');
+                @endphp
+                @forelse ($sorted as $paket)
                     <tr>
                         <td>
                             <img src="{{ $paket->image }}" alt="{{ $paket->name }}" style="max-width: 70px; margin-right: 15px; border-radius: 4px;">

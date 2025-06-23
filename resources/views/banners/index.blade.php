@@ -8,6 +8,23 @@
         <a href="{{ route('banners.create') }}" class="btn">Tambah Banner Baru</a>
     </div>
 
+    @php
+        $sort = request('sort', 'order_column');
+        $dir = request('dir', 'asc');
+        function sort_link($label, $col) {
+            $currentSort = request('sort', 'order_column');
+            $currentDir = request('dir', 'asc');
+            $newDir = ($currentSort === $col && $currentDir === 'asc') ? 'desc' : 'asc';
+            $icon = '';
+            if ($currentSort === $col) {
+                $icon = $currentDir === 'asc' ? '↑' : '↓';
+            }
+            $params = array_merge(request()->except(['sort', 'dir', 'page']), ['sort' => $col, 'dir' => $newDir]);
+            $url = url()->current() . '?' . http_build_query($params);
+            return '<a href="' . $url . '" style="color:#00d9ff;">' . $label . ' ' . $icon . '</a>';
+        }
+    @endphp
+
     @if(session('success'))
         <div class="success" style="margin-bottom: 20px;"><p>{{ session('success') }}</p></div>
     @endif
@@ -20,15 +37,24 @@
         <table class="table table-dark table-striped align-middle table-bordered">
             <thead>
                 <tr>
-                    <th>Urutan</th>
-                    <th>Gambar</th>
-                    <th>Brand & Nama</th>
-                    <th>Status</th>
+                    <th>{!! sort_link('Urutan', 'order_column') !!}</th>
+                    <th>{!! sort_link('Gambar', 'imageSrc') !!}</th>
+                    <th>{!! sort_link('Brand & Nama', 'brand') !!}</th>
+                    <th>{!! sort_link('Status', 'is_active') !!}</th>
                     <th style="width: 15%;">Aksi</th>
                 </tr>
             </thead>
             <tbody>
-                @forelse ($banners as $banner)
+                @php
+                    $sorted = $banners->sortBy(function($banner) use ($sort) {
+                        // Support for nested sort (brand & name)
+                        if ($sort === 'brand') {
+                            return $banner->brand . ' ' . $banner->name;
+                        }
+                        return $banner->{$sort};
+                    }, SORT_REGULAR, $dir === 'desc');
+                @endphp
+                @forelse ($sorted as $banner)
                     <tr>
                         <td>{{ $banner->order_column }}</td>
                         <td>

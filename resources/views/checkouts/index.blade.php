@@ -5,6 +5,42 @@
 @section('content')
     <h2 class="section-title-bs">Daftar Pesanan Masuk</h2>
 
+    {{-- Dropdown Sorting Responsive --}}
+    @php
+        $sort = request('sort', 'purchase_date');
+        $dir = request('dir', 'desc');
+        $sortOptions = [
+            'purchase_date' => 'Tanggal',
+            'customer_name' => 'Nama Pelanggan',
+            'customer_phone' => 'No. HP',
+            'customer_address' => 'Alamat',
+            'status_order' => 'Status',
+            'transaction_id' => 'ID Transaksi',
+        ];
+    @endphp
+    <form method="get" class="mb-4">
+        <div class="row g-2 align-items-center justify-content-start flex-wrap" style="max-width: 600px;">
+            <div class="col-12 col-md-5">
+                <label for="sort" class="form-label mb-1" style="color:#00d9ff;font-weight:bold;">Urutkan Berdasarkan</label>
+                <select name="sort" id="sort" class="form-select form-select-sm">
+                    @foreach($sortOptions as $key => $label)
+                        <option value="{{ $key }}" @if($sort == $key) selected @endif>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-8 col-md-4">
+                <label for="dir" class="form-label mb-1" style="color:#00d9ff;font-weight:bold;">Arah</label>
+                <select name="dir" id="dir" class="form-select form-select-sm">
+                    <option value="asc" @if($dir == 'asc') selected @endif>Ascending</option>
+                    <option value="desc" @if($dir == 'desc') selected @endif>Descending</option>
+                </select>
+            </div>
+            <div class="col-4 col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-info w-100" style="min-width:100px;">Sort</button>
+            </div>
+        </div>
+    </form>
+
     @if(session('success'))
         <div class="success" style="margin-bottom: 20px;"><p>{{ session('success') }}</p></div>
     @endif
@@ -15,27 +51,27 @@
         </div>
     @else
         {{-- Loop untuk setiap nama pelanggan dengan variabel $loop --}}
-        @foreach($groupedByName as $customerName => $transactions)
+        @php
+            // Gabungkan semua transaksi jadi satu collection untuk sorting global
+            $allTransactions = $groupedByName->flatten(1);
+            $sortedTransactions = $allTransactions->sortBy(function($item) use ($sort) {
+                return $item->{$sort};
+            }, SORT_REGULAR, $dir === 'desc');
+            // Group kembali setelah sorting
+            $groupedSorted = $sortedTransactions->groupBy('customer_name');
+        @endphp
+        @foreach($groupedSorted as $customerName => $transactions)
             @php
-                // Kelompokkan lagi berdasarkan ID transaksi di dalam grup nama ini
                 $groupedTransactions = $transactions->groupBy('transaction_id');
             @endphp
             <div class="admin-card-bs p-4 mb-4">
-                
-                <!-- ========================================================== -->
-                <!-- BAGIAN YANG DIPERBARUI: Menampilkan Nomor Urut -->
-                <!-- ========================================================== -->
                 <h4 style="color: #00d9ff; margin-bottom: 15px;">
                     Pelanggan: {{ $customerName }}
                 </h4>
-                <!-- ========================================================== -->
-
-                {{-- Loop untuk setiap transaksi dari pelanggan ini --}}
                 @foreach($groupedTransactions as $transaction_id => $items)
                     @php $order = $items->first(); @endphp
                     <div class="transaction-group p-3 mb-3" style="border: 1px solid #2d3748; border-radius: 8px; background-color: #11192b;">
-                         
-                         <div class="d-flex justify-content-between align-items-start mb-3 border-bottom pb-3 border-secondary">
+                        <div class="d-flex justify-content-between align-items-start mb-3 border-bottom pb-3 border-secondary">
                             <div>
                                 <h5 style="color: #e8eff5; margin-bottom: 8px;">ID Transaksi: {{ $transaction_id }}</h5>
                                 <small style="color: #adb5bd; display: block;">
@@ -50,15 +86,12 @@
                                 </form>
                             </div>
                         </div>
-                        
                         <div class="mb-3">
                             <p style="margin: 0;"><strong>No. HP:</strong> {{ $order->customer_phone }}</p>
                             <p style="margin: 0;"><strong>Alamat Pengiriman:</strong><br>{{ $order->customer_address }}</p>
                         </div>
-
                         <div class="mb-3">
                             <p><strong>Status Saat Ini:</strong> {{ $order->status_order }}</p>
-
                             {{-- FORM UNTUK UPDATE STATUS --}}
                             <form action="{{ route('checkouts.updateStatus', $transaction_id) }}" method="POST" class="d-flex align-items-center gap-2 mb-3">
                                 @csrf
@@ -72,7 +105,6 @@
                                 <button type="submit" class="btn btn-sm btn-info">Update Status</button>
                             </form>
                         </div>
-
                         <div class="table-responsive">
                             <table class="table table-dark table-sm">
                                 <thead>

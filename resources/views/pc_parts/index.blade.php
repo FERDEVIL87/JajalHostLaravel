@@ -16,22 +16,47 @@
         <div class="errors" style="margin-bottom: 20px;"><p>{{ session('error') }}</p></div>
     @endif
 
+    @php
+        $sort = request('sort', 'name');
+        $dir = request('dir', 'asc');
+        function sort_link_pcpart($label, $col) {
+            $currentSort = request('sort', 'name');
+            $currentDir = request('dir', 'asc');
+            $newDir = ($currentSort === $col && $currentDir === 'asc') ? 'desc' : 'asc';
+            $icon = '';
+            if ($currentSort === $col) {
+                $icon = $currentDir === 'asc' ? '↑' : '↓';
+            }
+            $params = array_merge(request()->except(['sort', 'dir', 'page']), ['sort' => $col, 'dir' => $newDir]);
+            $url = url()->current() . '?' . http_build_query($params);
+            return '<a href="' . $url . '" style="color:#00d9ff;">' . $label . ' ' . $icon . '</a>';
+        }
+    @endphp
+
     <div class="table-responsive">
         <table class="table table-dark table-striped align-middle table-bordered">
             <thead>
                 <tr>
-                    <th>Gambar</th>
-                    <th>Nama</th>
-                    <th>Brand</th>
-                    <th>Kategori</th>
-                    <th>Harga</th>
-                    <th>Spesifikasi</th>
-                    <th>Stok</th>
+                    <th>{!! sort_link_pcpart('Gambar', 'image') !!}</th>
+                    <th>{!! sort_link_pcpart('Nama', 'name') !!}</th>
+                    <th>{!! sort_link_pcpart('Brand', 'brand') !!}</th>
+                    <th>{!! sort_link_pcpart('Kategori', 'category') !!}</th>
+                    <th>{!! sort_link_pcpart('Harga', 'price') !!}</th>
+                    <th>{!! sort_link_pcpart('Spesifikasi', 'specs') !!}</th>
+                    <th>{!! sort_link_pcpart('Stok', 'stock') !!}</th>
                     <th style="width: 15%">Aksi</th>
                 </tr>
             </thead>
             <tbody>
-                @forelse ($pcParts as $part)
+                @php
+                    $sorted = $pcParts->sortBy(function($part) use ($sort) {
+                        if ($sort === 'specs') {
+                            return is_array($part->specs) ? implode(' ', $part->specs) : '';
+                        }
+                        return $part->{$sort};
+                    }, SORT_REGULAR, $dir === 'desc');
+                @endphp
+                @forelse ($sorted as $part)
                     <tr>
                         <td><img src="{{ $part->image }}" alt="{{ $part->name }}" style="max-width:80px; border-radius: 4px;"></td>
                         <td>{{ $part->name }}</td>

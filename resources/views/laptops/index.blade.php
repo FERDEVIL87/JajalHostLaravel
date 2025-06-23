@@ -16,21 +16,43 @@
         <div class="errors" style="margin-bottom: 20px;"><p>{{ session('error') }}</p></div>
     @endif
 
+    @php
+        $sort = request('sort', 'name');
+        $dir = request('dir', 'asc');
+        function sort_link_laptop($label, $col) {
+            $currentSort = request('sort', 'name');
+            $currentDir = request('dir', 'asc');
+            $newDir = ($currentSort === $col && $currentDir === 'asc') ? 'desc' : 'asc';
+            $icon = '';
+            if ($currentSort === $col) {
+                $icon = $currentDir === 'asc' ? '↑' : '↓';
+            }
+            $params = array_merge(request()->except(['sort', 'dir', 'page']), ['sort' => $col, 'dir' => $newDir]);
+            $url = url()->current() . '?' . http_build_query($params);
+            return '<a href="' . $url . '" style="color:#00d9ff;">' . $label . ' ' . $icon . '</a>';
+        }
+    @endphp
+
     <div class="table-responsive">
         <table class="table table-dark table-striped align-middle table-bordered">
             <thead>
                 <tr>
-                    <th>Gambar</th>
-                    <th>Nama</th>
-                    <th>Brand</th>
-                    <th>Kategori</th>
-                    <th>Harga</th>
-                    <th>Stok</th>
+                    <th>{!! sort_link_laptop('Gambar', 'image') !!}</th>
+                    <th>{!! sort_link_laptop('Nama', 'name') !!}</th>
+                    <th>{!! sort_link_laptop('Brand', 'brand') !!}</th>
+                    <th>{!! sort_link_laptop('Kategori', 'category') !!}</th>
+                    <th>{!! sort_link_laptop('Harga', 'price') !!}</th>
+                    <th>{!! sort_link_laptop('Stok', 'stock') !!}</th>
                     <th style="width: 15%">Aksi</th>
                 </tr>
             </thead>
             <tbody>
-                @forelse ($laptops as $laptop)
+                @php
+                    $sorted = $laptops->sortBy(function($laptop) use ($sort) {
+                        return $laptop->{$sort};
+                    }, SORT_REGULAR, $dir === 'desc');
+                @endphp
+                @forelse ($sorted as $laptop)
                     <tr>
                         <td>
                             <img src="{{ $laptop->image }}" alt="{{ $laptop->name }}" style="max-width: 60px; border-radius: 4px;">
