@@ -13,12 +13,10 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('username')->unique(); // Kolom dari error sebelumnya
+            $table->string('name');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            // PASTIKAN BARIS INI ADA
-            $table->string('role')->default('user'); // Menambahkan kolom 'role' dengan default 'user'
             $table->rememberToken();
             $table->timestamps();
         });
