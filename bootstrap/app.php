@@ -3,7 +3,6 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -12,24 +11,13 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-->withMiddleware(function (Middleware $middleware) {
-    
-    // ==========================================================
-    // KODE YANG SUDAH DIPERBAIKI
-    // ==========================================================
-    $middleware->trustProxies(
-        at: '*',
-        headers: [
-            Request::HEADER_X_FORWARDED_FOR,
-            Request::HEADER_X_FORWARDED_HOST,
-            Request::HEADER_X_FORWARDED_PORT,
-            Request::HEADER_X_FORWARDED_PROTO,
-            Request::HEADER_X_FORWARDED_AWS_ELB,
-        ]
-    );
-    // ==========================================================
-
-})
+    ->withMiddleware(function (Middleware $middleware) {
+        // Konfigurasi middleware ada di sini
+        
+        // Laravel 11+ biasanya sudah menangani ini secara otomatis,
+        // tetapi jika tidak, Anda bisa memastikan middleware API
+        // diterapkan dengan benar. Biasanya tidak perlu diubah.
+    })
     ->withExceptions(function (Exceptions $exceptions) {
         //
     })->create();
